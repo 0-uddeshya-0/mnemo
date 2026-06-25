@@ -43,7 +43,10 @@ Note apps store text. MNEMO builds a **mind**.
 - 🆓 **Free to run forever.** Local embeddings + a local model = no per-token bill, no rate limits, no quota. Bring a cloud key only if you *want* a bigger model.
 - 🤲 **Senses & hands.** Connect Gmail, Calendar, Notion, GitHub. It reads freely; anything it wants to *do* is proposed for your one-tap approval — never done silently.
 
-<div align="center"><br/><img src="docs/assets/mnemo-mark.svg" width="64" height="64" alt="" /><br/><sub><i>The mark is an “M” drawn as a memory-graph — five nodes, edges, and a hub: the self everything connects to.</i></sub><br/><br/></div>
+<div align="center"><br/>
+<img src="docs/assets/preview-agent.svg" alt="MNEMO — the Ask / companion view" width="820" />
+<br/><sub><i>Ask anything — it answers in your voice, grounded in your own beliefs (owner-asserted outranks inferred). The mark is an “M” drawn as a memory-graph: nodes, edges, and a hub — the self everything connects to.</i></sub>
+<br/><br/></div>
 
 ## ✨ Features
 
