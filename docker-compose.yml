@@ -1,0 +1,23 @@
+services:
+  db:
+    # pgvector image is Postgres 16 with the vector extension preinstalled.
+    # pg_trgm ships with Postgres core; both are enabled by the init migration.
+    image: pgvector/pgvector:pg16
+    container_name: mnemosyne-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-mnemosyne}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-mnemosyne}
+      POSTGRES_DB: ${POSTGRES_DB:-mnemosyne}
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
+    volumes:
+      - mnemosyne_pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-mnemosyne} -d ${POSTGRES_DB:-mnemosyne}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+volumes:
+  mnemosyne_pgdata:
