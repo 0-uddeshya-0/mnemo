@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <defs>
+    <linearGradient id="mnemoBg" x1="0" y1="0" x2="0.4" y2="1">
+      <stop offset="0" stop-color="#7D9B9D"/>
+      <stop offset="0.55" stop-color="#557476"/>
+      <stop offset="1" stop-color="#3E5A5D"/>
+    </linearGradient>
+    <radialGradient id="mnemoSheen" cx="0.3" cy="0.14" r="0.95">
+      <stop offset="0" stop-color="#ffffff" stop-opacity="0.26"/>
+      <stop offset="0.55" stop-color="#ffffff" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+  <rect width="512" height="512" rx="118" fill="url(#mnemoBg)"/>
+  <rect width="512" height="512" rx="118" fill="url(#mnemoSheen)"/>
+  <path d="M150 333 V233 a54 54 0 0 1 108 0 V333 M258 233 a54 54 0 0 1 108 0 V333"
+        fill="none" stroke="#ffffff" stroke-width="42"
+        stroke-linecap="round" stroke-linejoin="round" stroke-opacity="0.96"/>
+</svg>

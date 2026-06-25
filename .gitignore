@@ -1,0 +1,42 @@
+# deps
+node_modules/
+.pnpm-store/
+
+# env / secrets
+.env
+.env.local
+*.local
+.env.bak*
+*.bak
+
+# personal data — your photos + brain backups. NEVER commit these; they hold private content.
+data/
+backups/
+
+# local model weights (whisper.cpp, etc.) — large binaries, fetched per machine
+models/
+
+# next
+.next/
+out/
+next-env.d.ts
+
+# build output
+dist/
+build/
+apps/extension/dist/
+
+# pwa generated artifacts
+apps/web/public/sw.js
+apps/web/public/workbox-*.js
+apps/web/public/worker-*.js
+apps/web/public/sw.js.map
+
+# os / editor
+.DS_Store
+*.log
+.idea/
+.vscode/
+
+# postgres data (never sync this)
+pgdata/

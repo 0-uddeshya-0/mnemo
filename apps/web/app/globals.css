@@ -1,0 +1,326 @@
+@import "tailwindcss";
+
+/* ── Design tokens — light "liquid glass". OKLCH throughout. ─────────────────
+   The feeling: a bright, weightless observatory of the mind. Frosted glass chrome
+   floats over a soft gradient-mesh; content surfaces are solid for readability. */
+@theme {
+  /* ── "Ocean Fog" — calm, minimalist teal-greys. Palette anchors:
+     #F3F7F7 mist · #D1E0E1 haze · #9BB6B8 fog · #3E5A5D deep teal · #122224 ink. ── */
+  --color-background: oklch(0.974 0.004 200);
+  --color-surface: oklch(1 0 0);
+  --color-surface-2: oklch(0.945 0.008 200);
+  --color-foreground: oklch(0.23 0.014 205);
+  --color-muted: oklch(0.955 0.006 200);
+  --color-muted-foreground: oklch(0.495 0.018 205);
+  --color-border: oklch(0.9 0.012 200);
+  --color-input: oklch(0.9 0.012 200);
+  --color-accent: oklch(0.93 0.016 198);
+  --color-accent-foreground: oklch(0.38 0.03 205);
+  --color-primary: oklch(0.45 0.035 200);
+  --color-primary-foreground: oklch(0.98 0.004 200);
+  --color-ring: oklch(0.45 0.035 200);
+  --color-destructive: oklch(0.52 0.13 25);
+  --color-destructive-foreground: oklch(0.99 0 0);
+  --color-card: oklch(1 0 0);
+  --color-card-foreground: oklch(0.23 0.014 205);
+  --color-popover: oklch(0.995 0.002 200);
+  --color-popover-foreground: oklch(0.23 0.014 205);
+
+  /* soft foggy mid-teal for glows + ambient accents (not for text on white) */
+  --color-glow: oklch(0.72 0.026 198);
+
+  /* Native-feeling system type: SF Pro on Apple devices, Segoe/Roboto elsewhere. No web-font
+     round-trip → instant render, and it reads like the OS (the iOS-native feel we want).
+     Hierarchy comes from weight + size + tracking, not from a decorative serif. */
+  --font-sans: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", Roboto,
+    system-ui, sans-serif;
+  --font-body: var(--font-sans);
+  --font-display: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Segoe UI", Roboto,
+    system-ui, sans-serif;
+  --font-mono: ui-monospace, "SF Mono", "JetBrains Mono", "Cascadia Code", Menlo, monospace;
+
+  --radius: 0.85rem;
+
+  /* iOS-grade easing: smooth deceleration, never bouncy. */
+  --ease-out-quint: cubic-bezier(0.22, 1, 0.36, 1);
+  --ease-ios: cubic-bezier(0.32, 0.72, 0, 1);
+
+  /* Quiet, intentional entrance — a short fade with the faintest rise. No drifting, no
+     wiggle (the app should feel as still as a native screen). */
+  @keyframes fade-up {
+    0% {
+      opacity: 0;
+      transform: translateY(4px);
+    }
+    100% {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+  @keyframes sheet-up {
+    0% {
+      opacity: 0;
+      transform: translateY(12px);
+    }
+    100% {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+  @keyframes spin {
+    to {
+      transform: rotate(360deg);
+    }
+  }
+}
+
+@layer base {
+  :root {
+    color-scheme: light;
+  }
+  * {
+    border-color: var(--color-border);
+  }
+  html {
+    /* keep type stable when iOS rotates; let the app own the scroll. */
+    -webkit-text-size-adjust: 100%;
+    text-size-adjust: 100%;
+  }
+  html,
+  body {
+    background: var(--color-background);
+    color: var(--color-foreground);
+    overscroll-behavior-y: none; /* no rubber-band on the shell — native app feel */
+  }
+  body {
+    font-family: var(--font-body);
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+    -webkit-tap-highlight-color: transparent; /* no blue flash on tap */
+  }
+  button,
+  [role="button"],
+  a {
+    -webkit-tap-highlight-color: transparent;
+  }
+  ::selection {
+    background: oklch(0.72 0.04 198 / 0.28);
+  }
+  ::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+  }
+  ::-webkit-scrollbar-thumb {
+    background: oklch(0.8 0.014 200 / 0.55);
+    border-radius: 999px;
+    border: 3px solid transparent;
+    background-clip: content-box;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background: oklch(0.7 0.02 200 / 0.7);
+    background-clip: content-box;
+  }
+}
+
+/* ── Gradient-mesh backdrop (the thing the glass floats over) ────────────────── */
+.app-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  overflow: hidden;
+  background:
+    radial-gradient(48rem 48rem at 12% 0%, oklch(0.88 0.026 200 / 0.55), transparent 62%),
+    radial-gradient(44rem 44rem at 98% 6%, oklch(0.86 0.022 212 / 0.42), transparent 60%),
+    radial-gradient(56rem 56rem at 72% 102%, oklch(0.9 0.018 188 / 0.36), transparent 64%),
+    var(--color-background);
+  /* Time-of-day warmth, kept very subtle in this calm palette. */
+  filter: hue-rotate(var(--mesh-hue, 0deg));
+  transition: filter 3s linear;
+}
+.app-backdrop::after {
+  content: "";
+  position: absolute;
+  inset: -10%;
+  background:
+    radial-gradient(32rem 32rem at 58% 36%, oklch(0.9 0.02 198 / 0.3), transparent 62%);
+  /* Static — no drifting blob. The screen stays still like a native app. */
+}
+
+/* ── Liquid-glass material ──────────────────────────────────────────────────── */
+.glass {
+  background: color-mix(in oklch, white 40%, transparent);
+  backdrop-filter: blur(24px) saturate(1.7);
+  -webkit-backdrop-filter: blur(24px) saturate(1.7);
+  border: 1px solid oklch(1 0 0 / 0.45);
+  box-shadow:
+    inset 0 1px 0 oklch(1 0 0 / 0.6),
+    0 10px 34px -16px oklch(0.42 0.03 205 / 0.26);
+}
+.glass-strong {
+  background: color-mix(in oklch, white 62%, transparent);
+  backdrop-filter: blur(30px) saturate(1.6);
+  -webkit-backdrop-filter: blur(30px) saturate(1.6);
+  border: 1px solid oklch(1 0 0 / 0.5);
+  box-shadow:
+    inset 0 1px 0 oklch(1 0 0 / 0.7),
+    0 24px 60px -24px oklch(0.42 0.03 205 / 0.3);
+}
+
+/* ── Liquid Glass: the app chrome (nav, top bar, tab bar, sheets). Clean iOS-26-style
+   material — a strong frosted blur with a bright top edge and a soft specular sheen.
+   No SVG displacement (it reads as "warped/weird" on the web); crispness over gimmick. */
+.liquid-glass {
+  position: relative;
+  isolation: isolate;
+  background: color-mix(in oklch, white 44%, transparent);
+  backdrop-filter: blur(26px) saturate(1.7);
+  -webkit-backdrop-filter: blur(26px) saturate(1.7);
+  border: 1px solid oklch(1 0 0 / 0.4);
+  box-shadow:
+    inset 0 1px 0 oklch(1 0 0 / 0.7),
+    inset 0 0 0 1px oklch(1 0 0 / 0.06),
+    0 8px 30px -14px oklch(0.42 0.03 205 / 0.22);
+}
+/* soft static sheen — a fixed light reflection, not a pointer-chasing highlight */
+.liquid-glass::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  border-radius: inherit;
+  pointer-events: none;
+  background: linear-gradient(
+    160deg,
+    oklch(1 0 0 / 0.3),
+    transparent 34%,
+    transparent 72%,
+    oklch(0.72 0.04 198 / 0.08)
+  );
+}
+
+/* ── Neumorphism: soft extruded hardware-like controls (toggles, dials) ───────── */
+.neu {
+  background: oklch(0.955 0.006 200);
+  box-shadow:
+    inset 2px 2px 5px oklch(0.66 0.02 205 / 0.18),
+    inset -2px -2px 5px oklch(1 0 0 / 0.9);
+}
+.neu-raised {
+  background: oklch(0.985 0.004 200);
+  box-shadow:
+    3px 3px 8px oklch(0.66 0.02 205 / 0.15),
+    -3px -3px 8px oklch(1 0 0 / 0.9);
+}
+
+/* ── Claymorphism: soft, puffy, tactile — for MNEMO's companion accents ── */
+.clay {
+  background: linear-gradient(145deg, oklch(0.66 0.035 198), oklch(0.5 0.04 202));
+  color: oklch(0.98 0.004 200);
+  box-shadow:
+    8px 8px 18px oklch(0.5 0.03 205 / 0.22),
+    -6px -6px 14px oklch(1 0 0 / 0.55),
+    inset 3px 3px 8px oklch(1 0 0 / 0.32),
+    inset -5px -5px 11px oklch(0.42 0.04 202 / 0.3);
+}
+
+/* ── Solid content surface (cards in feeds — readable, not glass) ────────────── */
+.surface {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  box-shadow: 0 1px 2px oklch(0.5 0.03 224 / 0.04);
+}
+
+.font-display {
+  font-family: var(--font-display);
+}
+/* iOS "large title": heavy weight, tight tracking — hierarchy without a serif. */
+.display-title {
+  font-family: var(--font-display);
+  font-weight: 700;
+  letter-spacing: -0.022em;
+  line-height: 1.08;
+  text-wrap: balance;
+}
+
+/* ── Safe areas + native scroll (iOS) ──────────────────────────────────────────── */
+.pt-safe { padding-top: env(safe-area-inset-top); }
+.pb-safe { padding-bottom: env(safe-area-inset-bottom); }
+.scroll-touch {
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior: contain;
+}
+
+/* ── Motion — quiet and quick, never wiggly ────────────────────────────────────── */
+.animate-fade-up {
+  opacity: 0;
+  animation: fade-up 0.38s var(--ease-out-quint) forwards;
+}
+.animate-sheet-up {
+  animation: sheet-up 0.32s var(--ease-ios) both;
+}
+.stagger > * {
+  opacity: 0;
+  animation: fade-up 0.38s var(--ease-out-quint) forwards;
+  animation-delay: calc(var(--i, 0) * 32ms);
+}
+.press {
+  transition: transform 0.12s var(--ease-ios);
+}
+.press:active {
+  transform: scale(0.97);
+}
+
+/* ── Login atmosphere — a slow "breathing" aura + faint twinkles behind the mark.
+   The global prefers-reduced-motion rule below freezes both (they stay visible, static). ── */
+@keyframes mnemo-breathe {
+  0%,
+  100% {
+    transform: translate(-50%, -50%) scale(1);
+    opacity: 0.42;
+  }
+  50% {
+    transform: translate(-50%, -50%) scale(1.09);
+    opacity: 0.7;
+  }
+}
+.auth-aura {
+  position: absolute;
+  left: 50%;
+  top: 40%;
+  width: min(40rem, 92vw);
+  aspect-ratio: 1 / 1;
+  background: radial-gradient(circle, var(--color-glow) 0%, transparent 62%);
+  opacity: 0.5;
+  filter: blur(8px);
+  animation: mnemo-breathe 7.5s ease-in-out infinite;
+}
+@keyframes mnemo-twinkle {
+  0%,
+  100% {
+    opacity: 0.22;
+  }
+  50% {
+    opacity: 0.6;
+  }
+}
+.auth-star {
+  animation: mnemo-twinkle 5s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation: none !important;
+    transition: none !important;
+  }
+  .animate-fade-up,
+  .stagger > * {
+    opacity: 1;
+  }
+  .app-backdrop::after {
+    animation: none !important;
+  }
+}

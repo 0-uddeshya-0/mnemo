@@ -1,0 +1,11 @@
+{
+  "manifest_version": 3,
+  "name": "Mnemosyne",
+  "version": "0.1.0",
+  "description": "Save pages and selections to your Mnemosyne second brain.",
+  "permissions": ["contextMenus", "storage", "activeTab", "notifications"],
+  "host_permissions": ["http://localhost/*", "http://127.0.0.1/*", "https://*/*"],
+  "background": { "service_worker": "dist/background.js", "type": "module" },
+  "options_page": "options.html",
+  "action": { "default_title": "Save page to Mnemosyne" }
+}

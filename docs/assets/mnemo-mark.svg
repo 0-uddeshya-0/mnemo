@@ -1,0 +1,21 @@
+<svg width="240" height="240" viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="MNEMO">
+  <defs>
+    <linearGradient id="ocean" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#86A6A8"/>
+      <stop offset="0.52" stop-color="#4E6E70"/>
+      <stop offset="1" stop-color="#2F4B4E"/>
+    </linearGradient>
+  </defs>
+  <rect width="512" height="512" rx="152" fill="url(#ocean)"/>
+  <!-- an "M" drawn as a memory-graph: nodes joined by edges, hub at the valley -->
+  <path d="M150 372 V152 L256 292 L362 152 V372" fill="none" stroke="#fff" stroke-opacity="0.9"
+        stroke-width="28" stroke-linecap="round" stroke-linejoin="round"/>
+  <g fill="#fff">
+    <circle cx="150" cy="152" r="29"/>
+    <circle cx="362" cy="152" r="29"/>
+    <circle cx="256" cy="292" r="34"/>
+    <circle cx="150" cy="372" r="23" fill-opacity="0.92"/>
+    <circle cx="362" cy="372" r="23" fill-opacity="0.92"/>
+  </g>
+  <circle cx="256" cy="292" r="52" fill="none" stroke="#fff" stroke-opacity="0.42" stroke-width="7"/>
+</svg>

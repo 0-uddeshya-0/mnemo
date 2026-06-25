@@ -1,0 +1,30 @@
+{
+  "name": "mnemosyne",
+  "version": "0.1.0",
+  "private": true,
+  "description": "A personal knowledge graph API & second brain.",
+  "type": "module",
+  "engines": {
+    "node": ">=20.0.0"
+  },
+  "packageManager": "pnpm@9.15.4",
+  "scripts": {
+    "dev": "pnpm --filter @mnemosyne/web dev",
+    "build": "pnpm --filter @mnemosyne/web build",
+    "start": "pnpm --filter @mnemosyne/web start",
+    "lint": "pnpm --filter @mnemosyne/web lint",
+    "typecheck": "pnpm -r typecheck",
+    "db:up": "docker compose up -d",
+    "db:down": "docker compose down",
+    "db:migrate": "pnpm --filter @mnemosyne/web db:migrate",
+    "db:generate": "pnpm --filter @mnemosyne/web db:generate",
+    "db:seed": "pnpm --filter @mnemosyne/web db:seed",
+    "worker": "pnpm --filter @mnemosyne/web worker",
+    "mcp": "pnpm --filter @mnemosyne/web mcp",
+    "ext:build": "pnpm --filter @mnemosyne/extension build",
+    "digest": "pnpm --filter @mnemosyne/web digest",
+    "mnemo": "pnpm --filter @mnemosyne/web mnemo",
+    "mnemo:expose": "pnpm --filter @mnemosyne/web mnemo:expose",
+    "connect:google": "pnpm --filter @mnemosyne/web connect:google"
+  }
+}
