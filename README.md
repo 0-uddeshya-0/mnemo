@@ -19,6 +19,12 @@
 
 <sub>Postgres + pgvector · Drizzle · local MiniLM embeddings · Ollama (or any OpenAI-compatible LLM) · Tailwind v4 · MCP</sub>
 
+<br/>
+
+<img src="docs/assets/preview-graph.svg" alt="MNEMO — the knowledge graph view" width="840" />
+
+<sub><i>Your knowledge, connected — the graph view (shown with a demo brain).</i></sub>
+
 </div>
 
 ---
