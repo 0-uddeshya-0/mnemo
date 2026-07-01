@@ -54,8 +54,10 @@ Note apps store text. MNEMO builds a **mind**.
 |---|---|
 | 🧩 **Knowledge graph** | 20 node types, 16 edge types, hybrid search (keyword + semantic, re-ranked by salience & recency) |
 | 💬 **Agent companion** | A tool-using agent that reasons step-by-step, grounds every claim in your graph, and verifies its own draft before answering |
+| ⏰ **Automations** | Owner-defined recurring tasks ("every morning, research X and tie it to my notes") that run on schedule and land in your inbox |
+| 🔬 **Deep research** | An async, multi-round investigation: grounds in what you know → plans sub-questions → gathers the web → a cited brief tied back to your graph |
 | 📸 **Vision** | Drop in photos — it understands them, links the people/places, and recognises recurring faces across your library |
-| 🎙️ **Private voice** | On-device speech-to-text (whisper.cpp). Your audio never hits a cloud service |
+| 🎙️ **Private voice** | On-device speech-to-text (whisper.cpp) **and** text-to-speech read-aloud — voice in and out, nothing hits a cloud service |
 | 📥 **Ingest anything** | Notes, articles, PDFs, Readwise, Pocket, Notion, X archive, browser history, WhatsApp/Takeout exports — distilled, signal kept, noise dropped |
 | 🌐 **Connectors** | Gmail · Calendar · Notion · GitHub — read freely, act only with approval |
 | 🔄 **Self-optimizing** | Nightly consolidation, contradiction detection, salience reconciliation, persona rebuild |
