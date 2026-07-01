@@ -28,6 +28,12 @@ for (const candidate of [resolve(process.cwd(), "../../.env"), resolve(process.c
 const nextConfig = {
   reactStrictMode: true,
   outputFileTracingRoot: monorepoRoot,
+  // Server actions default to a 1MB body — too small for pasted archives (a Twitter tweets.js
+  // is several MB). Raise it so in-app imports don't 500 with "Body exceeded 1 MB limit".
+  // (Large files should still prefer the /api/internal/import route, which streams to a worker.)
+  experimental: {
+    serverActions: { bodySizeLimit: "25mb" },
+  },
   serverExternalPackages: [
     "argon2",
     "pg-boss",

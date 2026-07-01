@@ -15,6 +15,15 @@ import { activityLog, apiKeys } from "@/lib/db/schema";
 import { API_SCOPES, NODE_TYPES } from "@/lib/graph/constants";
 import { connectorStatus, type ConnectorStatus } from "@/lib/connectors";
 import { setConnectorSecret, CONNECTOR_SECRET_KEYS, type ConnectorSecretKey } from "@/lib/connectors/secrets";
+import {
+  listAutomations,
+  createAutomation,
+  updateAutomation,
+  deleteAutomation,
+  runAutomationNow,
+  type Automation,
+  type AutomationInput,
+} from "@/lib/automations";
 
 export interface ApiKeyView {
   id: string;
@@ -90,6 +99,35 @@ export async function updateDevSettingsAction(patch: Partial<DevSettings>): Prom
   return updateDevSettings(patch);
 }
 
+// ── Automations (owner-defined recurring agent tasks) ────────────────────────
+export async function listAutomationsAction(): Promise<Automation[]> {
+  await assertOwner();
+  return listAutomations();
+}
+export async function createAutomationAction(input: AutomationInput): Promise<Automation[]> {
+  await assertOwner();
+  await createAutomation(input);
+  return listAutomations();
+}
+export async function updateAutomationAction(
+  id: string,
+  patch: Partial<AutomationInput & { enabled: boolean }>,
+): Promise<Automation[]> {
+  await assertOwner();
+  await updateAutomation(id, patch);
+  return listAutomations();
+}
+export async function deleteAutomationAction(id: string): Promise<Automation[]> {
+  await assertOwner();
+  await deleteAutomation(id);
+  return listAutomations();
+}
+export async function runAutomationNowAction(id: string): Promise<{ ok: true }> {
+  await assertOwner();
+  await runAutomationNow(id);
+  return { ok: true };
+}
+
 export interface AgentLogEntry {
   action: string;
   keyName: string | null;
@@ -111,3 +149,5 @@ export async function getAgentLogAction(): Promise<AgentLogEntry[]> {
     .limit(30);
   return rows.map((r) => ({ action: r.action, keyName: r.keyName, at: r.at.toISOString() }));
 }
+
+export type { Automation, AutomationInput };

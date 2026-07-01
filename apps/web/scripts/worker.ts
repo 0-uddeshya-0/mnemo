@@ -10,6 +10,7 @@ import {
   type AgentJobPayload,
   type ArchiveImportPayload,
   type IngestJobPayload,
+  type ResearchJobPayload,
   type SynthesisJobPayload,
   type VisionJobPayload,
 } from "@/lib/queue";
@@ -19,6 +20,8 @@ import { runDailyDigest } from "@/lib/agent/digest";
 import { parseArchive } from "@/lib/import/parse";
 import { runArchiveImport } from "@/lib/import/run";
 import { runPhotoIngest } from "@/lib/vision-ingest";
+import { runDueAutomations } from "@/lib/automations";
+import { runDeepResearch } from "@/lib/research";
 import { checkEncryptionKey } from "@/lib/crypto";
 
 async function main() {
@@ -114,6 +117,34 @@ async function main() {
       }
     }
   });
+
+  // Deep research: a slow, multi-round web+graph investigation → a cited brief in the inbox.
+  await boss.work<ResearchJobPayload>(QUEUES.research, async (jobs) => {
+    for (const job of jobs) {
+      console.log(`[worker] deep research: "${job.data.topic}" …`);
+      try {
+        const r = await runDeepResearch(job.data.topic);
+        console.log(`[worker] deep research done → inbox (run ${r.runId})`);
+      } catch (err) {
+        console.error(`[worker] deep research FAILED:`, (err as Error).message);
+      }
+    }
+  });
+
+  // Automations tick: every 15 min, run any owner-defined recurring task that's due now.
+  await boss.work(QUEUES.automations, async () => {
+    try {
+      const ran = await runDueAutomations();
+      if (ran) console.log(`[worker] automations — ran ${ran} due task(s)`);
+    } catch (err) {
+      console.error("[worker] automations tick FAILED:", (err as Error).message);
+    }
+  });
+  try {
+    await boss.schedule(QUEUES.automations, "*/15 * * * *", {});
+  } catch (err) {
+    console.warn("[worker] could not register automations tick:", (err as Error).message);
+  }
 
   // Nightly synthesis at 03:00 (clustering, contradictions, gaps, dormant).
   try {

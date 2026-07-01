@@ -11,6 +11,8 @@ export const QUEUES = {
   agent: "agent",
   archiveImport: "archive_import",
   vision: "vision",
+  automations: "automations",
+  research: "research",
 } as const;
 
 let bossPromise: Promise<PgBoss> | null = null;
@@ -27,6 +29,8 @@ export async function getBoss(): Promise<PgBoss> {
       await boss.createQueue(QUEUES.agent);
       await boss.createQueue(QUEUES.archiveImport);
       await boss.createQueue(QUEUES.vision);
+      await boss.createQueue(QUEUES.automations);
+      await boss.createQueue(QUEUES.research);
       return boss;
     })();
   }
@@ -55,4 +59,8 @@ export interface ArchiveImportPayload {
 export interface VisionJobPayload {
   photoName: string; // stored filename in data/photos
   userNote?: string;
+}
+
+export interface ResearchJobPayload {
+  topic: string;
 }

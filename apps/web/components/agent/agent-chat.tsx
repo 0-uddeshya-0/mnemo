@@ -1,12 +1,13 @@
 "use client";
 import * as React from "react";
-import { Bot, Check, ChevronDown, Globe, Moon, SendHorizonal, Sparkles, Wrench, X } from "lucide-react";
+import { Bot, Check, ChevronDown, Globe, Microscope, Moon, SendHorizonal, Sparkles, Wrench, X } from "lucide-react";
 import {
   dismissRunAction,
   executeProposalsAction,
   listInboxAction,
   rebuildPersonaAction,
   runAgentAction,
+  startDeepResearchAction,
   type AgentResult,
   type ProposedAction,
   type RunRecord,
@@ -16,6 +17,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { toast } from "@/components/ui/toaster";
 import { Logo } from "@/components/shell/logo";
 import { MicButton } from "@/components/voice/mic-button";
+import { SpeakButton } from "@/components/voice/speak-button";
 import { cn } from "@/lib/utils";
 
 interface Turn {
@@ -80,6 +82,22 @@ export function AgentChat({ ownerName }: { ownerName: string }) {
       setTurns((t) => [...t, { role: "mnemo", content: `Something broke while I was thinking: ${(e as Error).message}` }]);
     } finally {
       setBusy(false);
+    }
+  }
+
+  async function deepResearch() {
+    const topic = input.trim();
+    if (topic.length < 3 || busy) return;
+    setInput("");
+    const res = await startDeepResearchAction(topic);
+    if (res.ok) {
+      toast({
+        title: "Researching in the background",
+        description: "It's slow on-device — I'll leave the brief in your inbox here when it's done.",
+        variant: "success",
+      });
+    } else {
+      toast({ title: res.error ?? "Couldn't start research", variant: "error" });
     }
   }
 
@@ -149,6 +167,7 @@ export function AgentChat({ ownerName }: { ownerName: string }) {
                   <div className="self-start whitespace-pre-wrap rounded-2xl bg-surface px-4 py-2.5 text-sm leading-relaxed text-foreground">
                     {turn.content}
                   </div>
+                  <SpeakButton text={turn.content} className="self-start px-1" />
                   {turn.result && turn.result.proposals.length > 0 && (
                     <Proposals turn={turn} onDone={() => setTurns((ts) => ts.map((t, j) => (j === i ? { ...t, done: true } : t)))} />
                   )}
@@ -181,6 +200,17 @@ export function AgentChat({ ownerName }: { ownerName: string }) {
             className="min-h-[48px] resize-none"
           />
           <MicButton onTranscript={setInput} disabled={busy} />
+          <Button
+            onClick={deepResearch}
+            disabled={busy || input.trim().length < 3}
+            size="icon"
+            variant="secondary"
+            className="size-12 shrink-0"
+            title="Deep research (runs in the background → your inbox)"
+            aria-label="Deep research"
+          >
+            <Microscope className="size-4" />
+          </Button>
           <Button onClick={() => send(input)} disabled={busy || !input.trim()} size="icon" className="size-12 shrink-0">
             <SendHorizonal className="size-4" />
           </Button>
@@ -289,7 +319,8 @@ function InboxCard({ run, onResolved }: { run: RunRecord; onResolved: () => void
 
   return (
     <div className="animate-fade-up rounded-2xl border border-primary/25 bg-primary/[0.06] p-4">
-      <p className="mb-3 whitespace-pre-wrap text-sm leading-relaxed text-foreground">{run.answer}</p>
+      <p className="mb-1 whitespace-pre-wrap text-sm leading-relaxed text-foreground">{run.answer}</p>
+      <SpeakButton text={run.answer} className="mb-3" />
       {run.proposals.length > 0 && (
         <div className="rounded-xl border border-border bg-surface p-3">
           <p className="mb-2 text-xs font-medium text-foreground">

@@ -1,22 +1,28 @@
 "use client";
 import * as React from "react";
-import { Check, Copy, Ear, KeyRound, Plus, Shield, SlidersHorizontal, Smartphone, Terminal, Trash2 } from "lucide-react";
+import { Check, Clock, Copy, Ear, KeyRound, Play, Plus, Shield, SlidersHorizontal, Smartphone, Terminal, Trash2 } from "lucide-react";
 import type { ConnectorStatus } from "@/lib/connectors";
 import {
   createApiKeyAction,
+  createAutomationAction,
   deleteApiKeyAction,
+  deleteAutomationAction,
   listApiKeysAction,
+  runAutomationNowAction,
   saveConnectorSecretsAction,
+  updateAutomationAction,
   updateDevSettingsAction,
   updateExposureAction,
   type AgentLogEntry,
   type ApiKeyView,
+  type Automation,
 } from "@/app/(app)/settings/agents/actions";
 import type { AgentExposure, DevSettings } from "@/lib/settings";
 import { NODE_TYPES, NODE_TYPE_COLORS, type NodeType } from "@/lib/graph/constants";
 import { OfflineCard } from "@/components/offline/offline-card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { Card } from "@/components/ui/card";
 import { toast } from "@/components/ui/toaster";
@@ -28,6 +34,7 @@ export function AgentsSettings({
   initialLog,
   connectors,
   dev,
+  automations,
   repoRoot,
   httpPort,
   appUrl,
@@ -37,6 +44,7 @@ export function AgentsSettings({
   initialLog: AgentLogEntry[];
   connectors: ConnectorStatus[];
   dev: DevSettings;
+  automations: Automation[];
   repoRoot: string;
   httpPort: number;
   appUrl: string;
@@ -103,6 +111,9 @@ export function AgentsSettings({
 
         {/* Siri */}
         <SiriCard httpPort={httpPort} appUrl={appUrl} />
+
+        {/* Automations — recurring agent tasks → inbox */}
+        <AutomationsCard initial={automations} />
 
         {/* Connectors — senses + hands */}
         <ConnectorsCard connectors={connectors} />
@@ -293,6 +304,120 @@ const GOOGLE_RESULT: Record<string, { title: string; ok: boolean }> = {
   error: { title: "Couldn’t connect Google — check the client ID/secret + redirect URI", ok: false },
   missing_client: { title: "Add the Google client ID + secret first", ok: false },
 };
+
+const WD = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+
+function AutomationsCard({ initial }: { initial: Automation[] }) {
+  const [list, setList] = React.useState(initial);
+  const [name, setName] = React.useState("");
+  const [prompt, setPrompt] = React.useState("");
+  const [frequency, setFrequency] = React.useState<Automation["frequency"]>("daily");
+  const [weekday, setWeekday] = React.useState(1);
+  const [time, setTime] = React.useState("08:00");
+  const [pending, start] = React.useTransition();
+  const [running, setRunning] = React.useState<string | null>(null);
+
+  const label = (a: Automation) => {
+    const t = `${String(a.hour).padStart(2, "0")}:${String(a.minute).padStart(2, "0")}`;
+    return a.frequency === "daily" ? `Daily · ${t}` : a.frequency === "weekdays" ? `Weekdays · ${t}` : `${WD[a.weekday]} · ${t}`;
+  };
+
+  function add() {
+    if (!name.trim() || !prompt.trim()) return;
+    const [h, m] = time.split(":").map(Number);
+    start(async () => {
+      setList(await createAutomationAction({ name, prompt, frequency, hour: h || 8, minute: m || 0, weekday }));
+      setName("");
+      setPrompt("");
+      toast({ title: "Automation scheduled", variant: "success" });
+    });
+  }
+  const toggle = (a: Automation) => start(async () => setList(await updateAutomationAction(a.id, { enabled: !a.enabled })));
+  const del = (id: string) => start(async () => setList(await deleteAutomationAction(id)));
+  function runNow(id: string) {
+    setRunning(id);
+    runAutomationNowAction(id)
+      .then(() => toast({ title: "Ran it — check your inbox on the MNEMO tab", variant: "success" }))
+      .catch(() => toast({ title: "Couldn't run it", variant: "error" }))
+      .finally(() => setRunning(null));
+  }
+
+  const selectCls =
+    "h-9 rounded-lg border border-border bg-surface px-2 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-ring";
+
+  return (
+    <Card className="p-5">
+      <SectionTitle icon={Clock} title="Automations" />
+      <p className="mb-4 text-sm text-muted-foreground">
+        Recurring tasks MNEMO runs on its own — each result lands in your inbox to review. e.g.{" "}
+        <i>“Every morning, research what's new in cognitive science and tie it to my notes.”</i>
+      </p>
+
+      <div className="mb-4 flex flex-col gap-2">
+        {list.length === 0 && <p className="text-xs text-muted-foreground">No automations yet — add one below.</p>}
+        {list.map((a) => (
+          <div key={a.id} className="rounded-xl border border-border bg-surface-2/40 p-3">
+            <div className="flex items-center justify-between gap-2">
+              <span className="truncate text-sm font-medium text-foreground">{a.name}</span>
+              <div className="flex shrink-0 items-center gap-2">
+                <span className="font-mono text-[10px] text-muted-foreground">{label(a)}</span>
+                <Switch checked={a.enabled} onCheckedChange={() => toggle(a)} />
+              </div>
+            </div>
+            <p className="mt-1 line-clamp-2 text-xs text-muted-foreground">{a.prompt}</p>
+            <div className="mt-2 flex items-center gap-4">
+              <button
+                type="button"
+                onClick={() => runNow(a.id)}
+                disabled={running === a.id}
+                className="inline-flex items-center gap-1 text-[11px] text-primary hover:underline disabled:opacity-50"
+              >
+                <Play className="size-3" /> {running === a.id ? "Running…" : "Run now"}
+              </button>
+              <button
+                type="button"
+                onClick={() => del(a.id)}
+                className="inline-flex items-center gap-1 text-[11px] text-muted-foreground transition-colors hover:text-destructive"
+              >
+                <Trash2 className="size-3" /> Delete
+              </button>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      <div className="flex flex-col gap-2 rounded-xl border border-dashed border-border p-3">
+        <Input value={name} onChange={(e) => setName(e.target.value)} placeholder="Name (e.g. Morning research)" className="text-sm" />
+        <Textarea
+          value={prompt}
+          onChange={(e) => setPrompt(e.target.value)}
+          placeholder="What should MNEMO do? (e.g. Research the latest in AI safety and relate it to my beliefs.)"
+          className="min-h-[60px] resize-none text-sm"
+        />
+        <div className="flex flex-wrap items-center gap-2">
+          <select value={frequency} onChange={(e) => setFrequency(e.target.value as Automation["frequency"])} className={selectCls}>
+            <option value="daily">Daily</option>
+            <option value="weekdays">Weekdays</option>
+            <option value="weekly">Weekly</option>
+          </select>
+          {frequency === "weekly" && (
+            <select value={weekday} onChange={(e) => setWeekday(Number(e.target.value))} className={selectCls}>
+              {WD.map((d, i) => (
+                <option key={i} value={i}>
+                  {d}
+                </option>
+              ))}
+            </select>
+          )}
+          <input type="time" value={time} onChange={(e) => setTime(e.target.value)} className={selectCls} />
+          <Button size="sm" onClick={add} disabled={pending || !name.trim() || !prompt.trim()} className="ml-auto">
+            <Plus className="size-4" /> Add
+          </Button>
+        </div>
+      </div>
+    </Card>
+  );
+}
 
 function ConnectorsCard({ connectors }: { connectors: ConnectorStatus[] }) {
   const [list, setList] = React.useState(connectors);
