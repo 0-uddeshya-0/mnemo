@@ -5,7 +5,7 @@
  * Provider-agnostic via lib/llm (free OpenRouter chain now; one env line to local Ollama).
  */
 import { z } from "zod";
-import { completeJSON } from "@/lib/llm";
+import { completeJSON, completeText } from "@/lib/llm";
 import { getPersona } from "@/lib/agent/persona";
 import { buildSystemPrompt } from "@/lib/agent/constitution";
 import { recordRun, resolveRun } from "@/lib/agent/runs";
@@ -55,6 +55,36 @@ const StepSchema = z.object({
 const MAX_ITERS = 8;
 const OBS_LIMIT = 2200;
 
+const HAN = /[一-鿿]/; // Chinese characters
+const KANA = /[぀-ヿ]/; // Japanese hiragana + katakana
+const HANGUL = /[가-힯]/; // Korean
+
+/**
+ * Safety net for Qwen's tendency to drift into Chinese. If the answer is Chinese (Han with no
+ * Japanese kana / Korean hangul) but the owner did NOT write in CJK, translate it back to
+ * English. Genuine Japanese/Korean replies (which carry kana/hangul) are left untouched.
+ */
+async function fixLanguageDrift(answer: string, task: string): Promise<string> {
+  const looksChinese = HAN.test(answer) && !KANA.test(answer) && !HANGUL.test(answer);
+  const taskIsCJK = HAN.test(task) || KANA.test(task) || HANGUL.test(task);
+  if (!looksChinese || taskIsCJK) return answer;
+  try {
+    const en = (
+      await completeText({
+        system:
+          "Translate the text to natural English, preserving its first-person voice and meaning. Output ONLY the English translation — no preamble, no notes.",
+        messages: [{ role: "user", content: answer }],
+        maxTokens: 800,
+        temperature: 0,
+        timeoutMs: 120_000,
+      })
+    ).trim();
+    return en || answer;
+  } catch {
+    return answer; // best-effort; never lose the answer
+  }
+}
+
 export async function runAgent(
   task: string,
   history: { role: "user" | "assistant"; content: string }[] = [],
@@ -75,6 +105,7 @@ export async function runAgent(
   scratch.push(`TASK: ${task}`);
 
   async function finalize(answer: string): Promise<AgentResult> {
+    answer = await fixLanguageDrift(answer, task); // catch Qwen's Chinese drift before it ships
     await recordActivity({
       action: mode === "digest" ? "agent_digest" : "agent_run",
       actor: source === "owner" ? "owner" : "agent",
@@ -106,7 +137,9 @@ export async function runAgent(
           'Produce your FINAL answer as {"final": string}. Verify it against the evidence above: ' +
           "keep only what's supported by what you found or what they've asserted; label inferences as inferences " +
           "('you seem to…'); if something is uncertain or missing, say so plainly instead of guessing; if the " +
-          "evidence conflicts, surface both sides. Their voice, concise, no preamble.",
+          "evidence conflicts, surface both sides. Their voice, concise, no preamble. " +
+          "Write in the SAME language as their task above (default English) — NEVER Chinese; if the draft or any " +
+          "web evidence contains Chinese, translate it into English.",
       });
       return checked.final?.trim() || draft;
     } catch {

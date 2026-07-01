@@ -1,5 +1,6 @@
 "use server";
 import { assertOwner } from "@/lib/auth/guard";
+import { getBoss, QUEUES } from "@/lib/queue";
 import { executeProposals, runAgent, type AgentResult, type ProposedAction } from "@/lib/agent/runtime";
 import { buildPersona } from "@/lib/agent/persona";
 import { listPendingRuns, resolveRun, type RunRecord } from "@/lib/agent/runs";
@@ -25,6 +26,16 @@ export async function runAgentAction(
       proposals: [],
     };
   }
+}
+
+/** Kick off a slow deep-research pass in the background; the brief lands in the inbox. */
+export async function startDeepResearchAction(topic: string): Promise<{ ok: boolean; error?: string }> {
+  await assertOwner();
+  const t = topic.trim();
+  if (t.length < 3) return { ok: false, error: "Give me a topic to research." };
+  const boss = await getBoss();
+  await boss.send(QUEUES.research, { topic: t.slice(0, 300) });
+  return { ok: true };
 }
 
 export async function executeProposalsAction(

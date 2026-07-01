@@ -203,6 +203,21 @@ export const agentRuns = pgTable("agent_runs", {
   reviewedAt: timestamp("reviewed_at", { withTimezone: true }),
 });
 
+// Owner-defined recurring agent tasks ("every morning, research X"). A worker tick runs the
+// due ones and drops the result into the digest inbox. Learned from Khoj/OpenJarvis automations.
+export const automations = pgTable("automations", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  name: text("name").notNull(),
+  prompt: text("prompt").notNull(),
+  frequency: text("frequency").$type<"daily" | "weekdays" | "weekly">().default("daily").notNull(),
+  hour: integer("hour").default(8).notNull(),
+  minute: integer("minute").default(0).notNull(),
+  weekday: integer("weekday").default(1).notNull(),
+  enabled: boolean("enabled").default(true).notNull(),
+  lastRunAt: timestamp("last_run_at", { withTimezone: true }),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+});
+
 // ── Inferred row types ──────────────────────────────────────────────────────
 export type Node = InferSelectModel<typeof nodes>;
 export type NewNode = InferInsertModel<typeof nodes>;
