@@ -40,3 +40,6 @@ apps/web/public/sw.js.map
 
 # postgres data (never sync this)
 pgdata/
+
+# typescript build cache
+*.tsbuildinfo
