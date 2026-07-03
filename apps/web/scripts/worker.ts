@@ -22,6 +22,8 @@ import { runArchiveImport } from "@/lib/import/run";
 import { runPhotoIngest } from "@/lib/vision-ingest";
 import { runDueAutomations } from "@/lib/automations";
 import { runDeepResearch } from "@/lib/research";
+import { syncVault } from "@/lib/vault";
+import { stampWorkerHeartbeat } from "@/lib/settings";
 import { checkEncryptionKey } from "@/lib/crypto";
 
 async function main() {
@@ -131,7 +133,7 @@ async function main() {
     }
   });
 
-  // Automations tick: every 15 min, run any owner-defined recurring task that's due now.
+  // Automations tick: every 15 min, run due recurring tasks + sync the markdown vault.
   await boss.work(QUEUES.automations, async () => {
     try {
       const ran = await runDueAutomations();
@@ -139,7 +141,18 @@ async function main() {
     } catch (err) {
       console.error("[worker] automations tick FAILED:", (err as Error).message);
     }
+    try {
+      const v = await syncVault();
+      if (!v.skipped && (v.imported || v.exported))
+        console.log(`[worker] vault sync — imported ${v.imported}, exported ${v.exported}`);
+    } catch (err) {
+      console.error("[worker] vault sync FAILED:", (err as Error).message);
+    }
   });
+
+  // Liveness heartbeat for the health dashboard (worker considered down after ~20 min silence).
+  await stampWorkerHeartbeat().catch(() => {});
+  setInterval(() => stampWorkerHeartbeat().catch(() => {}), 60_000);
   try {
     await boss.schedule(QUEUES.automations, "*/15 * * * *", {});
   } catch (err) {

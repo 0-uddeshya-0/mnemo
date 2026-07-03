@@ -30,10 +30,54 @@ export interface DevSettings {
 
 const DEFAULT_DEV: DevSettings = { developerMode: false, digestEnabled: true, proactiveQuestions: true };
 
+export interface VaultSettings {
+  /** Absolute path to the markdown vault folder ("" = disabled). Works with Obsidian or plain md. */
+  path: string;
+  /** Ingest new/changed .md files from the vault into the brain. */
+  importEnabled: boolean;
+  /** Export the graph as linked markdown into <vault>/MNEMO/. */
+  exportEnabled: boolean;
+}
+
+const DEFAULT_VAULT: VaultSettings = { path: "", importEnabled: true, exportEnabled: true };
+
 interface SettingsData {
   agent?: Partial<AgentExposure>;
   ownerName?: string;
   dev?: Partial<DevSettings>;
+  vault?: Partial<VaultSettings>;
+  workerHeartbeat?: string;
+}
+
+export async function getVaultSettings(): Promise<VaultSettings> {
+  const d = await readData();
+  return { ...DEFAULT_VAULT, ...(d.vault ?? {}) };
+}
+
+export async function updateVaultSettings(patch: Partial<VaultSettings>): Promise<VaultSettings> {
+  const current = await getVaultSettings();
+  const next = { ...current, ...patch };
+  const data = await readData();
+  const merged = { ...data, vault: next };
+  await db
+    .insert(appSettings)
+    .values({ id: 1, data: merged })
+    .onConflictDoUpdate({ target: appSettings.id, set: { data: merged } });
+  return next;
+}
+
+/** Worker liveness: the worker stamps this every minute; health reads its age. */
+export async function stampWorkerHeartbeat(): Promise<void> {
+  const data = await readData();
+  const merged = { ...data, workerHeartbeat: new Date().toISOString() };
+  await db
+    .insert(appSettings)
+    .values({ id: 1, data: merged })
+    .onConflictDoUpdate({ target: appSettings.id, set: { data: merged } });
+}
+
+export async function getWorkerHeartbeat(): Promise<string | null> {
+  return (await readData()).workerHeartbeat ?? null;
 }
 
 export async function getDevSettings(): Promise<DevSettings> {

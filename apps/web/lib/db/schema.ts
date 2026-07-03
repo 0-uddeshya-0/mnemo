@@ -218,6 +218,13 @@ export const automations = pgTable("automations", {
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
 });
 
+// Vault sync state — which markdown files from the owner's vault folder are already ingested.
+export const vaultFiles = pgTable("vault_files", {
+  path: text("path").primaryKey(),
+  hash: text("hash").notNull(),
+  ingestedAt: timestamp("ingested_at", { withTimezone: true }).defaultNow().notNull(),
+});
+
 // ── Inferred row types ──────────────────────────────────────────────────────
 export type Node = InferSelectModel<typeof nodes>;
 export type NewNode = InferInsertModel<typeof nodes>;
