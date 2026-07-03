@@ -61,6 +61,8 @@ Note apps store text. MNEMO builds a **mind**.
 | 📥 **Ingest anything** | Notes, articles, PDFs, Readwise, Pocket, Notion, X archive, browser history, WhatsApp/Takeout exports — distilled, signal kept, noise dropped |
 | 🌐 **Connectors** | Gmail · Calendar · Notion · GitHub — read freely, act only with approval |
 | 🔄 **Self-optimizing** | Nightly consolidation, contradiction detection, salience reconciliation, persona rebuild |
+| 📓 **Obsidian / markdown vault** | Two-way folder sync: your notes ingest into the brain; the graph exports as linked markdown ([[wikilinks]]) you can browse in Obsidian |
+| 🩺 **Health dashboard** | Live system panel (DB, model, worker, queues, backups, disk) with a status dot in the top bar and one-click fixes |
 | 📱 **Everywhere** | Installable PWA, offline graph + search, Siri Shortcuts, MCP server for any MCP client |
 | 💾 **Yours to keep** | One-command encrypted backups + restore. Your brain is never locked in |
 

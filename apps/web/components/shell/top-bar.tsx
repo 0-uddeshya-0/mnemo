@@ -4,6 +4,7 @@ import Link from "next/link";
 import { Command, Search } from "lucide-react";
 import { openPalette } from "@/components/command/palette-store";
 import { Logo } from "@/components/shell/logo";
+import { HealthDot } from "@/components/shell/health-dot";
 
 export function TopBar({ completeness }: { completeness: number }) {
   React.useEffect(() => {
@@ -56,6 +57,7 @@ export function TopBar({ completeness }: { completeness: number }) {
             <span className="h-full rounded-full bg-primary" style={{ width: `${Math.max(4, pct)}%` }} />
           </span>
         </Link>
+        <HealthDot />
       </div>
     </header>
   );

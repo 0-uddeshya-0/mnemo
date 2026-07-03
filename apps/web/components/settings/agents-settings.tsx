@@ -1,6 +1,6 @@
 "use client";
 import * as React from "react";
-import { Check, Clock, Copy, Ear, KeyRound, Play, Plus, Shield, SlidersHorizontal, Smartphone, Terminal, Trash2 } from "lucide-react";
+import { Activity, Check, Clock, Copy, Ear, FolderSync, KeyRound, Play, Plus, RefreshCw, Shield, SlidersHorizontal, Smartphone, Terminal, Trash2 } from "lucide-react";
 import type { ConnectorStatus } from "@/lib/connectors";
 import {
   createApiKeyAction,
@@ -10,14 +10,16 @@ import {
   listApiKeysAction,
   runAutomationNowAction,
   saveConnectorSecretsAction,
+  syncVaultNowAction,
   updateAutomationAction,
   updateDevSettingsAction,
   updateExposureAction,
+  updateVaultSettingsAction,
   type AgentLogEntry,
   type ApiKeyView,
   type Automation,
 } from "@/app/(app)/settings/agents/actions";
-import type { AgentExposure, DevSettings } from "@/lib/settings";
+import type { AgentExposure, DevSettings, VaultSettings } from "@/lib/settings";
 import { NODE_TYPES, NODE_TYPE_COLORS, type NodeType } from "@/lib/graph/constants";
 import { OfflineCard } from "@/components/offline/offline-card";
 import { Button } from "@/components/ui/button";
@@ -35,6 +37,7 @@ export function AgentsSettings({
   connectors,
   dev,
   automations,
+  vault,
   repoRoot,
   httpPort,
   appUrl,
@@ -45,6 +48,7 @@ export function AgentsSettings({
   connectors: ConnectorStatus[];
   dev: DevSettings;
   automations: Automation[];
+  vault: VaultSettings;
   repoRoot: string;
   httpPort: number;
   appUrl: string;
@@ -90,8 +94,10 @@ export function AgentsSettings({
       </p>
 
       <div className="flex flex-col gap-6">
+        <HealthCard />
         <DevCard dev={devState} onChange={setDevState} />
         <OfflineCard />
+        <VaultCard initial={vault} />
 
         {/* MCP — developer-only */}
         {devState.developerMode && (
@@ -304,6 +310,156 @@ const GOOGLE_RESULT: Record<string, { title: string; ok: boolean }> = {
   error: { title: "Couldn’t connect Google — check the client ID/secret + redirect URI", ok: false },
   missing_client: { title: "Add the Google client ID + secret first", ok: false },
 };
+
+// ── System health ─────────────────────────────────────────────────────────────
+type Level = "ok" | "warn" | "down";
+interface Health {
+  level: Level;
+  checks: Record<string, { level: Level; detail: string }>;
+  graph: { nodes: number; edges: number };
+}
+const LEVEL_DOT: Record<Level, string> = { ok: "bg-emerald-500", warn: "bg-amber-500", down: "bg-red-500" };
+const CHECK_LABEL: Record<string, string> = {
+  postgres: "Database",
+  ollama: "Model",
+  worker: "Worker",
+  queues: "Queues",
+  backup: "Backups",
+  disk: "Disk",
+};
+
+function HealthCard() {
+  const [h, setH] = React.useState<Health | null>(null);
+  const [acting, setActing] = React.useState<string | null>(null);
+
+  const load = React.useCallback(() => {
+    fetch("/api/internal/health", { cache: "no-store" })
+      .then((r) => (r.ok ? r.json() : null))
+      .then(setH)
+      .catch(() => {});
+  }, []);
+  React.useEffect(() => {
+    load();
+    const t = setInterval(load, 60_000);
+    return () => clearInterval(t);
+  }, [load]);
+
+  function act(action: string, label: string) {
+    setActing(action);
+    fetch("/api/internal/health", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ action }),
+    })
+      .then(async (r) => {
+        const d = (await r.json()) as { ok: boolean; detail: string };
+        toast({ title: d.ok ? `${label}: ${d.detail}` : `${label} failed`, description: d.ok ? undefined : d.detail, variant: d.ok ? "success" : "error" });
+        setTimeout(load, 1500);
+      })
+      .catch(() => toast({ title: `${label} failed`, variant: "error" }))
+      .finally(() => setActing(null));
+  }
+
+  return (
+    <Card className="p-5">
+      <div className="flex items-center justify-between">
+        <SectionTitle icon={Activity} title="System health" />
+        <button type="button" onClick={load} aria-label="Refresh" className="text-muted-foreground hover:text-foreground">
+          <RefreshCw className="size-3.5" />
+        </button>
+      </div>
+      {!h ? (
+        <p className="text-xs text-muted-foreground">Checking…</p>
+      ) : (
+        <>
+          <div className="grid grid-cols-2 gap-x-6 gap-y-2 sm:grid-cols-3">
+            {Object.entries(h.checks).map(([k, c]) => (
+              <div key={k} className="flex items-start gap-2">
+                <span className={cn("mt-1.5 size-2 shrink-0 rounded-full", LEVEL_DOT[c.level])} />
+                <div className="min-w-0">
+                  <p className="text-xs font-medium text-foreground">{CHECK_LABEL[k] ?? k}</p>
+                  <p className="truncate text-[11px] text-muted-foreground" title={c.detail}>{c.detail}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+          <div className="mt-3 flex flex-wrap items-center gap-2 border-t border-border pt-3">
+            <span className="mr-auto text-[11px] text-muted-foreground">
+              {h.graph.nodes} nodes · {h.graph.edges} links in your brain
+            </span>
+            <Button size="sm" variant="secondary" disabled={!!acting} onClick={() => act("warm_model", "Warm model")}>
+              {acting === "warm_model" ? "Warming…" : "Warm model"}
+            </Button>
+            <Button size="sm" variant="secondary" disabled={!!acting} onClick={() => act("restart_worker", "Restart worker")}>
+              {acting === "restart_worker" ? "Restarting…" : "Restart worker"}
+            </Button>
+            <Button size="sm" variant="secondary" disabled={!!acting} onClick={() => act("backup", "Backup")}>
+              {acting === "backup" ? "Backing up…" : "Back up now"}
+            </Button>
+          </div>
+        </>
+      )}
+    </Card>
+  );
+}
+
+// ── Vault sync ────────────────────────────────────────────────────────────────
+function VaultCard({ initial }: { initial: VaultSettings }) {
+  const [cfg, setCfg] = React.useState(initial);
+  const [path, setPath] = React.useState(initial.path);
+  const [pending, start] = React.useTransition();
+
+  function save(patch: Partial<VaultSettings>) {
+    start(async () => {
+      const res = await updateVaultSettingsAction(patch);
+      setCfg(res.settings);
+      if (res.error) toast({ title: res.error, variant: "error" });
+      else toast({ title: "Vault settings saved", variant: "success" });
+    });
+  }
+  function syncNow() {
+    start(async () => {
+      const r = await syncVaultNowAction();
+      toast({
+        title: r.skipped ? "Set a valid vault folder first" : `Synced — ${r.imported} note(s) in, ${r.exported} file(s) out`,
+        variant: r.skipped ? "error" : "success",
+      });
+    });
+  }
+
+  return (
+    <Card className="p-5">
+      <SectionTitle icon={FolderSync} title="Vault sync — Obsidian & markdown" />
+      <p className="mb-3 text-sm text-muted-foreground">
+        Point MNEMO at a folder of markdown notes (an Obsidian vault works). New/changed notes are
+        ingested into your brain; the graph is exported to <span className="font-mono">MNEMO/</span> inside
+        the vault as linked markdown ([[wikilinks]]). Private bodies are never exported. Syncs every 15 min.
+      </p>
+      <div className="flex flex-col gap-2 sm:flex-row">
+        <Input
+          value={path}
+          onChange={(e) => setPath(e.target.value)}
+          placeholder="/Users/you/Documents/MyVault"
+          className="min-w-0 flex-1 font-mono text-xs"
+        />
+        <Button size="sm" disabled={pending || path.trim() === cfg.path} onClick={() => save({ path })}>
+          Save
+        </Button>
+      </div>
+      <div className="mt-3 flex flex-wrap items-center gap-x-6 gap-y-2">
+        <label className="flex items-center gap-2 text-xs text-foreground">
+          <Switch checked={cfg.importEnabled} onCheckedChange={(v) => save({ importEnabled: v })} /> Import notes → brain
+        </label>
+        <label className="flex items-center gap-2 text-xs text-foreground">
+          <Switch checked={cfg.exportEnabled} onCheckedChange={(v) => save({ exportEnabled: v })} /> Export brain → vault
+        </label>
+        <Button size="sm" variant="secondary" disabled={pending || !cfg.path} onClick={syncNow} className="ml-auto">
+          {pending ? "Working…" : "Sync now"}
+        </Button>
+      </div>
+    </Card>
+  );
+}
 
 const WD = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 

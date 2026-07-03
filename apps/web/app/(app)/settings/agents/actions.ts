@@ -5,11 +5,15 @@ import { assertOwner } from "@/lib/auth/guard";
 import { createApiKey, deleteApiKey, listApiKeys } from "@/lib/auth/api-keys";
 import {
   getAgentExposure,
+  getVaultSettings,
   updateAgentExposure,
   updateDevSettings,
+  updateVaultSettings,
   type AgentExposure,
   type DevSettings,
+  type VaultSettings,
 } from "@/lib/settings";
+import { syncVault, validateVaultPath } from "@/lib/vault";
 import { db } from "@/lib/db";
 import { activityLog, apiKeys } from "@/lib/db/schema";
 import { API_SCOPES, NODE_TYPES } from "@/lib/graph/constants";
@@ -151,3 +155,21 @@ export async function getAgentLogAction(): Promise<AgentLogEntry[]> {
 }
 
 export type { Automation, AutomationInput };
+
+// ── Vault sync (Obsidian-compatible markdown folder) ─────────────────────────
+export async function getVaultSettingsAction(): Promise<VaultSettings> {
+  await assertOwner();
+  return getVaultSettings();
+}
+export async function updateVaultSettingsAction(patch: Partial<VaultSettings>): Promise<{ settings: VaultSettings; error?: string }> {
+  await assertOwner();
+  if (patch.path !== undefined && patch.path.trim() !== "") {
+    const v = await validateVaultPath(patch.path);
+    if (!v.ok) return { settings: await getVaultSettings(), error: v.error };
+  }
+  return { settings: await updateVaultSettings(patch) };
+}
+export async function syncVaultNowAction(): Promise<{ imported: number; exported: number; skipped: boolean }> {
+  await assertOwner();
+  return syncVault();
+}
