@@ -38,6 +38,11 @@ const schema = z.object({
   APP_URL: z.string().default("http://localhost:3000"),
   MCP_HTTP_PORT: z.coerce.number().int().positive().default(8848),
 
+  // Content-engine dashboard (separate local repo/process — see `bin/engine hq`).
+  // The Content module proxies to it server-side; page shows a quiet offline state
+  // when it isn't running.
+  CONTENT_ENGINE_URL: z.string().default("http://localhost:4973"),
+
   // ── Connectors (MNEMO's senses + hands). All optional; a connector's tools only
   // appear once its credentials are present. See `pnpm connect:google` for OAuth setup.
   NOTION_TOKEN: z.string().default(""),

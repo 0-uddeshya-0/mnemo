@@ -1,7 +1,7 @@
 "use client";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Bot, Search, Share2, Upload, Sparkles, MessageCircle, Settings } from "lucide-react";
+import { Bot, Search, Share2, Upload, Sparkles, MessageCircle, Megaphone, Settings } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Logo } from "@/components/shell/logo";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
@@ -13,6 +13,7 @@ const NAV = [
   { href: "/capture", label: "Capture", icon: Upload },
   { href: "/insights", label: "Insights", icon: Sparkles },
   { href: "/ask", label: "Ask", icon: MessageCircle },
+  { href: "/content", label: "Content", icon: Megaphone },
   { href: "/settings/agents", label: "Settings", icon: Settings },
 ] as const;
 

@@ -1,7 +1,7 @@
 "use client";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Bot, Plus, Search, Share2, Settings } from "lucide-react";
+import { Bot, Plus, Search, Share2, Megaphone, Settings } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const TABS = [
@@ -9,6 +9,7 @@ const TABS = [
   { href: "/graph", label: "Graph", icon: Share2 },
   { href: "/capture", label: "Capture", icon: Plus },
   { href: "/agent", label: "MNEMO", icon: Bot },
+  { href: "/content", label: "Content", icon: Megaphone },
   { href: "/settings/agents", label: "Settings", icon: Settings },
 ] as const;
 
@@ -17,7 +18,7 @@ export function BottomTabBar() {
   const pathname = usePathname();
   return (
     <nav className="liquid-glass z-30 shrink-0 pb-safe md:hidden">
-      <ul className="grid grid-cols-5">
+      <ul className="grid grid-cols-6">
         {TABS.map((t) => {
           const exact = "exact" in t && t.exact;
           const active = exact ? pathname === t.href : pathname.startsWith(t.href);
