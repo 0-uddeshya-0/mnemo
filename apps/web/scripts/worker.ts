@@ -81,10 +81,15 @@ async function main() {
         const parsed = parseArchive(filename, content);
         const result = await runArchiveImport(parsed, source);
         console.log(`[worker] import done — ${result.created} nodes from ${result.total} items (${parsed.kind})`);
-      } catch (err) {
-        console.error(`[worker] archive import FAILED:`, (err as Error).message);
-      } finally {
         await unlink(filePath).catch(() => {});
+      } catch (err) {
+        // Mark the job failed in pg-boss instead of swallowing it: a caught-and-logged
+        // error left the job COMPLETED, so a totally failed import looked successful
+        // to anyone watching the queue or the UI. The upload is kept for diagnosis.
+        console.error(`[worker] archive import FAILED (upload kept at ${filePath}):`, (err as Error).message);
+        await boss
+          .fail(QUEUES.archiveImport, job.id, { message: (err as Error).message, filename, source })
+          .catch((e) => console.error("[worker] could not mark job failed:", (e as Error).message));
       }
     }
   });
