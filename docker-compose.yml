@@ -10,7 +10,10 @@ services:
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-mnemosyne}
       POSTGRES_DB: ${POSTGRES_DB:-mnemosyne}
     ports:
-      - "${POSTGRES_PORT:-5432}:5432"
+      # Loopback-only: Docker's default publish (host:container) binds every
+      # interface, which put this database — with its default mnemosyne/mnemosyne
+      # credentials — on the local network for anyone to connect to.
+      - "127.0.0.1:${POSTGRES_PORT:-5432}:5432"
     volumes:
       - mnemosyne_pgdata:/var/lib/postgresql/data
     healthcheck:

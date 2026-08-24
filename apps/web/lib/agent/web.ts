@@ -57,9 +57,58 @@ function decodeDdgUrl(href: string): string {
   return href.startsWith("//") ? `https:${href}` : href;
 }
 
+/**
+ * Reject anything that is not a public http(s) destination. The agent picks these
+ * URLs from model output and from fetched page content, so without this an
+ * injected link could make the agent read loopback services (the content-engine
+ * dashboard, the MCP HTTP port) or cloud metadata and paste the response into the graph.
+ */
+function assertPublicHttpUrl(raw: string): URL {
+  let u: URL;
+  try {
+    u = new URL(raw);
+  } catch {
+    throw new Error(`refusing to fetch: not a URL (${raw.slice(0, 80)})`);
+  }
+  if (u.protocol !== "http:" && u.protocol !== "https:") {
+    throw new Error(`refusing to fetch: ${u.protocol} is not http(s)`);
+  }
+  const host = u.hostname.toLowerCase().replace(/^\[|\]$/g, "");
+  const isPrivate =
+    host === "localhost" ||
+    host.endsWith(".localhost") ||
+    host.endsWith(".internal") ||
+    host === "::1" ||
+    host === "0.0.0.0" ||
+    /^127\./.test(host) ||
+    /^10\./.test(host) ||
+    /^192\.168\./.test(host) ||
+    /^172\.(1[6-9]|2\d|3[01])\./.test(host) ||
+    /^169\.254\./.test(host) ||
+    /^f[cd][0-9a-f]{2}:/i.test(host) ||
+    /^fe80:/i.test(host);
+  if (isPrivate) throw new Error(`refusing to fetch private/loopback address: ${host}`);
+  return u;
+}
+
 export async function fetchWeb(url: string): Promise<{ title: string; text: string }> {
-  const res = await fetch(url, { headers: { "user-agent": UA }, redirect: "follow" });
-  if (!res.ok) throw new Error(`fetch ${url} → HTTP ${res.status}`);
+  assertPublicHttpUrl(url);
+  // Manual redirects: every hop is re-checked, so a public URL cannot bounce to loopback.
+  let current = url;
+  let res: Response | undefined;
+  for (let hop = 0; hop < 5; hop++) {
+    res = await fetch(current, { headers: { "user-agent": UA }, redirect: "manual" });
+    if (res.status >= 300 && res.status < 400) {
+      const loc = res.headers.get("location");
+      if (!loc) break;
+      current = assertPublicHttpUrl(new URL(loc, current).toString()).toString();
+      continue;
+    }
+    break;
+  }
+  if (!res) throw new Error(`fetch ${url} → no response`);
+  if (res.status >= 300 && res.status < 400) throw new Error(`fetch ${url} → too many redirects`);
+  if (!res.ok) throw new Error(`fetch ${current} → HTTP ${res.status}`);
   const html = await res.text();
   const dom = new JSDOM(html, { url });
   const article = new Readability(dom.window.document).parse();
